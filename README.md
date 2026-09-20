@@ -2,8 +2,16 @@
 
 **A LinkedIn-inspired professional network for Boston rats**, with fictional professional profiles and real Boston 311 Rodent Activity service request records when the city's API is reachable.
 
-## Run in VS Code
-`npm run dev`
+### Prerequisites
+- Node.js 20+
+- npm
+
+## Running Locally
+```sh
+npm install
+npm run dev
+```
+Open `localhost:3000`
 
 ## What's Boston-specific
 - Fictional rats work in Allston, Back Bay, Beacon Hill, Dorchester, East Boston, Jamaica Plain, Roxbury and South Boston.
