@@ -1,6 +1,6 @@
 # 🐀 Squeekden Boston — HackMIT
 
-**A LinkedIn-inspired professional network for Boston rats**, with fictional professional profiles and real *Boston 311 Rodent Activity service request* records when the city's API is reachable.
+**A LinkedIn-inspired professional network for Boston rats**, with fictional professional profiles and real Boston 311 Rodent Activity service request records when the city's API is reachable.
 
 ## Run in VS Code
 `npm run dev`
