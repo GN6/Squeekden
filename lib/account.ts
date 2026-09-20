@@ -1,0 +1,16 @@
+// Legacy storage keys retained to preserve profiles from the original RatIn prototype.
+export type CustomRat={name:string;title:string;company:string;borough:string;neighborhood:string;skills:string[];about:string;post:string;source:'ai'|'template'};
+export type Session={access_token:string;refresh_token:string;expires_at:number;user:{id:string;email?:string}};
+const url=process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/,'');
+const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export const cloudReady=Boolean(url&&key);
+export const localKey='ratin-demo-v2';
+export function loadLocal():CustomRat[]{try{return JSON.parse(localStorage.getItem(localKey)||'[]') as CustomRat[]}catch{return []}}
+export function saveLocal(rats:CustomRat[]){localStorage.setItem(localKey,JSON.stringify(rats))}
+export function loadSession():Session|null{try{return JSON.parse(localStorage.getItem('ratin-session')||'null')}catch{return null}}
+export function saveSession(s:Session|null){if(s)localStorage.setItem('ratin-session',JSON.stringify(s));else localStorage.removeItem('ratin-session')}
+async function request(path:string,options:RequestInit={},token?:string){if(!url||!key)throw Error('Cloud accounts are not configured. Use guest mode or follow README setup.');const res=await fetch(url+path,{...options,headers:{apikey:key,Authorization:`Bearer ${token||key}`,'Content-Type':'application/json',...(options.headers||{})}});const payload=await res.json().catch(()=>({}));if(!res.ok)throw Error(payload.msg||payload.error_description||payload.message||payload.error||`Cloud request HTTP ${res.status}`);return payload;}
+export async function auth(email:string,password:string,signup:boolean):Promise<Session|null>{const data=await request(signup?'/auth/v1/signup':'/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});if(!data.access_token){if(signup)return null;throw Error('No session returned; verify your email first.')}const session={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:Math.floor(Date.now()/1000)+data.expires_in,user:data.user} as Session;saveSession(session);return session;}
+export async function freshSession():Promise<Session|null>{const s=loadSession();if(!s)return null;if(s.expires_at>Date.now()/1000+90)return s;try{const d=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:s.refresh_token})});const next={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Math.floor(Date.now()/1000)+d.expires_in,user:d.user} as Session;saveSession(next);return next}catch{saveSession(null);return null}}
+export async function cloudProfiles():Promise<CustomRat[]>{const s=await freshSession();if(!s)throw Error('Please sign in.');const data=await request('/rest/v1/rat_profiles?select=profile&order=created_at.desc',{method:'GET'},s.access_token);return data.map((r:{profile:CustomRat})=>r.profile)}
+export async function cloudAdd(profile:CustomRat){const s=await freshSession();if(!s)throw Error('Please sign in.');await request('/rest/v1/rat_profiles',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:s.user.id,profile})},s.access_token)}
